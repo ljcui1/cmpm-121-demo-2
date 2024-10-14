@@ -100,24 +100,3 @@ clearButton.addEventListener("click", () => {
   drawingChangedEvent();
 });
 
-const undoButton = document.createElement("button");
-undoButton.innerHTML = "undo";
-app.append(undoButton);
-
-undoButton.addEventListener("click", () => {
-  if(lines.length > 0){
-    redoLines.push(lines.pop()!);
-    drawingChangedEvent();
-  }
-});
-
-const redoButton = document.createElement("button");
-redoButton.innerHTML = "redo";
-app.append(redoButton);
-
-redoButton.addEventListener("click", () => {
-  if(redoLines.length > 0){
-    lines.push(redoLines.pop()!);
-    drawingChangedEvent();
-  }
-});
