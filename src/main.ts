@@ -28,27 +28,13 @@ const redoLines: Point[][] = [];
 
 let currentLine: Point[] | null = null;
 
-interface Point{
-  x: number;
-  y: number;
-}
-
-const lines: Point[][] = [];
-const redoLines: Point[][] = [];
-
-let currentLine: Point[] | null = null;
-
 const cursor = {
   active: false,
   x: 0,
   y: 0
 };
 
-//custom drawing event
-function drawingChangedEvent(){
-  const event = new Event("drawing-changed");
-  canvas.dispatchEvent(event);
-}
+
 
 //custom drawing event
 function drawingChangedEvent(){
@@ -88,7 +74,7 @@ canvas.addEventListener("mousemove", (e) => {
 
     drawingChangedEvent();
   }
-});
+};
 
 canvas.addEventListener("mouseup", () => {
   cursor.active = false;
