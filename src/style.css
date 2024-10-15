@@ -38,8 +38,33 @@ h1 {
 #app {
   max-width: 1280px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
   padding: 2rem;
   text-align: center;
+}
+
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.button-container {
+  margin-top: 10px;
+  display: flex;
+  gap: 5px;
+}
+
+.tool-display {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  background-color: #f0f0f0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 .logo {

@@ -25,10 +25,13 @@ interface Command{
 interface MarkerLineCommand extends Command{
   drag: (x: number, y: number) => void;
   points: {x: number, y: number}[];
+  penWidth: number;
 }
 
 const commands: Command[] = [];
 const redoCommands: Command[] = [];
+
+let penWidth = 1;
 
 let currentLineCommand: MarkerLineCommand | null = null;
 
@@ -37,10 +40,11 @@ const createMarkerLineCommand = (x: number, y: number): MarkerLineCommand => {
 
   return{
     points,
+    penWidth,
 
     display(ctx: CanvasRenderingContext2D): void{
       ctx.strokeStyle = "black";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = this.penWidth;
       ctx?.beginPath();
       ctx?.moveTo(points[0].x, points[0].y);
 
@@ -143,3 +147,47 @@ redoButton.addEventListener("click", () => {
     notify("drawing-changed");
   }
 });
+
+//pens
+const thinPenButton = document.createElement("button");
+thinPenButton.innerHTML = "Thin Pen";
+thinPenButton.classList.add("active");
+app.append(thinPenButton);
+
+thinPenButton.addEventListener("click", () => {
+  penWidth = 1;
+  thinPenButton.classList.add("active");
+  thickPenButton.classList.remove("active");
+  selectedTool.innerHTML = "Selected Tool: Thin Pen";
+});
+
+const thickPenButton = document.createElement("button");
+thickPenButton.innerHTML = "Thick Pen";
+//thickPenButton.classList.add("active");
+app.append(thickPenButton);
+
+thickPenButton.addEventListener("click", () => {
+  penWidth = 4;
+  thickPenButton.classList.add("active");
+  thinPenButton.classList.remove("active");
+  selectedTool.innerHTML = "Selected Tool: Thick Pen";
+});
+
+//reformatting canvas and buttons
+const container = document.createElement("div");
+container.className = "canvas-container";
+app.append(container);
+
+container.append(canvas);
+
+const buttonContainer = document.createElement("div");
+buttonContainer.className = "button-container";
+container.append(buttonContainer);
+
+buttonContainer.append(clearButton, undoButton, redoButton, thinPenButton, thickPenButton);
+
+//ui info
+const selectedTool = document.createElement("div");
+selectedTool.className = "tool-display";
+selectedTool.innerHTML = "Selected Tool: Thin Pen";
+app.append(selectedTool);
