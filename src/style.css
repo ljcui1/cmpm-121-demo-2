@@ -123,4 +123,5 @@ canvas{
   border-radius: 30px;
   border: solid;
   filter: drop-shadow(5px 5px 5px rgba(0, 0, 0, 0.5));
+  cursor: none;
 }

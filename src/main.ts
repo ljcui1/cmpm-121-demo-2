@@ -23,17 +23,25 @@ interface Command{
 }
 
 interface MarkerLineCommand extends Command{
-  drag: (x: number, y: number) => void;
+  draw: (x: number, y: number) => void;
   points: {x: number, y: number}[];
   penWidth: number;
+}
+
+interface CursorCommand extends Command{
+  x: number,
+  y: number,
+  draw: (x: number, y: number) => void;
 }
 
 const commands: Command[] = [];
 const redoCommands: Command[] = [];
 
 let penWidth = 1;
+let cursorImg = "∙";
 
 let currentLineCommand: MarkerLineCommand | null = null;
+let cursorCommand: CursorCommand | null = null;
 
 const createMarkerLineCommand = (x: number, y: number): MarkerLineCommand => {
   const points: {x: number, y: number}[] = [{x, y}];
@@ -54,21 +62,27 @@ const createMarkerLineCommand = (x: number, y: number): MarkerLineCommand => {
       ctx.stroke();
     },
 
-    drag: (x: number, y: number) => {
+    draw: (x: number, y: number) => {
       points.push({x, y});
     },
   };
 };
 
-/*const createCursorCommand = (x: number, y: number): CursorCommand => {
+const createCursorCommand = (x: number, y: number): CursorCommand => {
   return{
     x,
     y,
-    execute: () => {
-      //cursor shape
-    }
+    draw(x: number, y: number){
+      this.x = x;
+      this.y = y;
+    },
+    display(ctx: CanvasRenderingContext2D): void{
+      ctx.font = "32px monospace";
+      ctx.fillText(cursorImg, this.x - 8, this.y + 8);
+    },
+    
   }
-}*/
+}
 
 const bus = new EventTarget();
 
@@ -77,7 +91,7 @@ function notify(name: string): void{
 }
 
 bus.addEventListener("drawing-changed", redraw);
-bus.addEventListener("cursor-changed", redraw);
+bus.addEventListener("tool-moved", redraw);
 
 tick();
 
@@ -90,10 +104,26 @@ canvas.addEventListener("mousedown", (e) => {
 
 canvas.addEventListener("mousemove", (e) => {
   if(e.buttons === 1 && currentLineCommand){
-    currentLineCommand.drag(e.offsetX, e.offsetY);
+    currentLineCommand.draw(e.offsetX, e.offsetY);
     notify("drawing-changed");
   }
+    if(!cursorCommand){
+      cursorCommand = createCursorCommand(e.offsetX, e.offsetY);
+    }
+    cursorCommand?.draw(e.offsetX, e.offsetY);
+    notify("tool-moved");
+  
 });
+
+canvas.addEventListener("mouseout", (e) => {
+  cursorCommand = null;
+  notify("tool-moved");
+});
+
+canvas.addEventListener("mouseenter", (e) => {
+  cursorCommand = createCursorCommand(e.offsetX, e.offsetY);
+  notify("tool-moved");
+})
 
 canvas.addEventListener("mouseup", () => {
   currentLineCommand = null;
@@ -104,9 +134,9 @@ function redraw(): void{
   ctx?.clearRect(0, 0, canvas.width, canvas.height);
   commands.forEach((cmd) => cmd.display(ctx));
 
-  /*if(cursorCommand){
-    cursorCommand.execute();
-  }*/
+  if(cursorCommand){
+    cursorCommand.display(ctx);
+  }
 }
 
 function tick(): void{
@@ -159,6 +189,7 @@ thinPenButton.addEventListener("click", () => {
   thinPenButton.classList.add("active");
   thickPenButton.classList.remove("active");
   selectedTool.innerHTML = "Selected Tool: Thin Pen";
+  cursorImg = "∙";
 });
 
 const thickPenButton = document.createElement("button");
@@ -171,6 +202,7 @@ thickPenButton.addEventListener("click", () => {
   thickPenButton.classList.add("active");
   thinPenButton.classList.remove("active");
   selectedTool.innerHTML = "Selected Tool: Thick Pen";
+  cursorImg = "•";
 });
 
 //reformatting canvas and buttons
