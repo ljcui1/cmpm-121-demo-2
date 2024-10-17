@@ -5,6 +5,9 @@ const APP_NAME = "Painote: Paint and Note Application";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
 
+const buttonContainer = document.createElement("div");
+buttonContainer.className = "button-container";
+
 //page title
 const title = document.createElement("h1");
 title.innerHTML = "Painote: Paint and Note Application";
@@ -23,7 +26,7 @@ interface Command{
 }
 
 interface MarkerLineCommand extends Command{
-  draw: (x: number, y: number) => void;
+  drag: (x: number, y: number) => void;
   points: {x: number, y: number}[];
   penWidth: number;
 }
@@ -34,14 +37,23 @@ interface CursorCommand extends Command{
   draw: (x: number, y: number) => void;
 }
 
+interface StickerCommand extends Command{
+  emoji: string,
+  x: number,
+  y: number,
+  setPosition: (x: number, y: number) => void;
+}
+
 const commands: Command[] = [];
 const redoCommands: Command[] = [];
 
 let penWidth = 1;
 let cursorImg = "∙";
+let cursorPos = 8;
 
 let currentLineCommand: MarkerLineCommand | null = null;
 let cursorCommand: CursorCommand | null = null;
+let stickerCommand: StickerCommand | null = null;
 
 const createMarkerLineCommand = (x: number, y: number): MarkerLineCommand => {
   const points: {x: number, y: number}[] = [{x, y}];
@@ -62,7 +74,7 @@ const createMarkerLineCommand = (x: number, y: number): MarkerLineCommand => {
       ctx.stroke();
     },
 
-    draw: (x: number, y: number) => {
+    drag: (x: number, y: number) => {
       points.push({x, y});
     },
   };
@@ -78,11 +90,27 @@ const createCursorCommand = (x: number, y: number): CursorCommand => {
     },
     display(ctx: CanvasRenderingContext2D): void{
       ctx.font = "32px monospace";
-      ctx.fillText(cursorImg, this.x - 8, this.y + 8);
+      ctx.fillText(cursorImg, this.x - cursorPos, this.y + cursorPos);
     },
     
   }
-}
+};
+
+const createStickerCommand = (emoji: string, x: number, y: number): StickerCommand => {
+  return{
+    emoji,
+    x,
+    y,
+    setPosition(x: number, y: number){
+      this.x = x;
+      this.y = y;
+    },
+    display(ctx: CanvasRenderingContext2D): void{
+      ctx.font = "32px";
+      ctx.fillText(this.emoji, this.x, this.y);
+    }
+  }
+};
 
 const bus = new EventTarget();
 
@@ -95,27 +123,54 @@ bus.addEventListener("tool-moved", redraw);
 
 tick();
 
+let isDragging = false;
+let currentSticker: StickerCommand | null = null;
+
 canvas.addEventListener("mousedown", (e) => {
-  currentLineCommand = createMarkerLineCommand(e.offsetX, e.offsetY);
-  commands.push(currentLineCommand);
-  redoCommands.length = 0;
-  notify("drawing-changed");
+  if(stickerCommand){
+    const stickerWidth = 32;
+    const stickerHeight = 32;
+
+    if (e.offsetX >= stickerCommand.x && e.offsetX <= stickerCommand.x + stickerWidth &&
+      e.offsetY >= stickerCommand.y && e.offsetY <= stickerCommand.y + stickerHeight) {
+      isDragging = true;
+      currentSticker = stickerCommand;
+    } else {
+      stickerCommand.setPosition(e.offsetX, e.offsetY);
+      commands.push(stickerCommand);
+      //stickerCommand = null;
+      notify("drawing-changed");
+    }
+  }else{
+    currentLineCommand = createMarkerLineCommand(e.offsetX, e.offsetY);
+    commands.push(currentLineCommand);
+    redoCommands.length = 0;
+    notify("drawing-changed");
+  }
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if(e.buttons === 1 && currentLineCommand){
-    currentLineCommand.draw(e.offsetX, e.offsetY);
+  if (isDragging && currentSticker) {
+    currentSticker.setPosition(e.offsetX, e.offsetY);
     notify("drawing-changed");
   }
-    if(!cursorCommand){
-      cursorCommand = createCursorCommand(e.offsetX, e.offsetY);
-    }
-    cursorCommand?.draw(e.offsetX, e.offsetY);
-    notify("tool-moved");
-  
+  if (e.buttons === 1 && currentLineCommand) {
+    currentLineCommand.drag(e.offsetX, e.offsetY);
+    notify("drawing-changed");
+  }
+  if (!cursorCommand) {
+    cursorCommand = createCursorCommand(e.offsetX, e.offsetY);
+  }
+  cursorCommand?.draw(e.offsetX, e.offsetY);
+  notify("tool-moved");
 });
 
 canvas.addEventListener("mouseout", (e) => {
+  if(isDragging && stickerCommand){
+    stickerCommand.setPosition(e.offsetX, e.offsetY);
+    notify("tool-moved");
+  }
+
   cursorCommand = null;
   notify("tool-moved");
 });
@@ -126,7 +181,9 @@ canvas.addEventListener("mouseenter", (e) => {
 })
 
 canvas.addEventListener("mouseup", () => {
+  isDragging = false;
   currentLineCommand = null;
+  currentSticker = null;
   notify("drawing-changed");
 });
 
@@ -136,6 +193,9 @@ function redraw(): void{
 
   if(cursorCommand){
     cursorCommand.display(ctx);
+  }
+  if(stickerCommand){
+    stickerCommand.display(ctx);
   }
 }
 
@@ -178,6 +238,26 @@ redoButton.addEventListener("click", () => {
   }
 });
 
+//making sticker buttons
+const createStickerButton = (emoji: string) => {
+  const button = document.createElement("button");
+  button.innerHTML = emoji;
+  button.addEventListener("click", () => {
+    stickerCommand = createStickerCommand(emoji, cursorCommand?.x || 0, cursorCommand?.y || 0);
+    selectedTool.innerHTML = `Selected Tool: ${emoji}`;cursorImg = emoji;
+    cursorPos = 0;
+    notify("tool-moved");
+  });
+  return button;
+};
+
+const emojiButtons = ["🐀", "😈", "👾"];
+emojiButtons.forEach((emoji) => {
+  const stickerButton = createStickerButton(emoji);
+  app.append(stickerButton);
+  buttonContainer.append(stickerButton);
+});
+
 //pens
 const thinPenButton = document.createElement("button");
 thinPenButton.innerHTML = "Thin Pen";
@@ -189,7 +269,9 @@ thinPenButton.addEventListener("click", () => {
   thinPenButton.classList.add("active");
   thickPenButton.classList.remove("active");
   selectedTool.innerHTML = "Selected Tool: Thin Pen";
+  cursorPos = 8;
   cursorImg = "∙";
+  stickerCommand = null;
 });
 
 const thickPenButton = document.createElement("button");
@@ -202,7 +284,9 @@ thickPenButton.addEventListener("click", () => {
   thickPenButton.classList.add("active");
   thinPenButton.classList.remove("active");
   selectedTool.innerHTML = "Selected Tool: Thick Pen";
+  cursorPos = 8;
   cursorImg = "•";
+  stickerCommand = null;
 });
 
 //reformatting canvas and buttons
@@ -212,8 +296,6 @@ app.append(container);
 
 container.append(canvas);
 
-const buttonContainer = document.createElement("div");
-buttonContainer.className = "button-container";
 container.append(buttonContainer);
 
 buttonContainer.append(clearButton, undoButton, redoButton, thinPenButton, thickPenButton);
