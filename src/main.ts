@@ -16,7 +16,7 @@ app.append(title);
 //canvas
 const canvas = document.createElement("canvas") as HTMLCanvasElement;
 canvas.width = 512;
-canvas.height = 512;
+canvas.height = 256;
 app.append(canvas);
 const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -29,6 +29,7 @@ interface MarkerLineCommand extends Command{
   drag: (x: number, y: number) => void;
   points: {x: number, y: number}[];
   penWidth: number;
+  color: string;
 }
 
 interface CursorCommand extends Command{
@@ -41,6 +42,7 @@ interface StickerCommand extends Command{
   emoji: string,
   x: number,
   y: number,
+  rotation: number,
   setPosition: (x: number, y: number) => void;
 }
 
@@ -55,15 +57,30 @@ let currentLineCommand: MarkerLineCommand | null = null;
 let cursorCommand: CursorCommand | null = null;
 let stickerCommand: StickerCommand | null = null;
 
+let currentMarkerColor = "#000000";
+
+const colorPicker = document.createElement("input");
+colorPicker.type = "color";
+colorPicker.value = currentMarkerColor;
+app.append(colorPicker);
+
+colorPicker.addEventListener("input", (e) => {
+  const target = e.target as HTMLInputElement | null;
+  if(target){
+    currentMarkerColor = target.value;
+  }
+});
+
 const createMarkerLineCommand = (x: number, y: number): MarkerLineCommand => {
   const points: {x: number, y: number}[] = [{x, y}];
 
   return{
     points,
     penWidth,
+    color: currentMarkerColor,
 
     display(ctx: CanvasRenderingContext2D): void{
-      ctx.strokeStyle = "black";
+      ctx.strokeStyle = this.color;
       ctx.lineWidth = this.penWidth;
       ctx?.beginPath();
       ctx?.moveTo(points[0].x, points[0].y);
@@ -89,25 +106,52 @@ const createCursorCommand = (x: number, y: number): CursorCommand => {
       this.y = y;
     },
     display(ctx: CanvasRenderingContext2D): void{
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate((stickerRotation * Math.PI) / 180);
       ctx.font = "32px monospace";
-      ctx.fillText(cursorImg, this.x - cursorPos, this.y + cursorPos);
+      ctx.fillText(cursorImg, 0 - cursorPos, cursorPos);
+      ctx.restore();
     },
     
   }
 };
+
+//rotationslider
+const rotationSlider = document.createElement("input");
+rotationSlider.type = "range";
+rotationSlider.min = "0";
+rotationSlider.max = "360";
+rotationSlider.value = "0";
+rotationSlider.style.margin = "10px";
+app.append(rotationSlider);
+
+let stickerRotation = 0;
+
+rotationSlider.addEventListener("input", (e) => {
+  const target = e.target as HTMLInputElement | null;
+  if(target){
+    stickerRotation = Number(target.value);
+  }
+});
 
 const createStickerCommand = (emoji: string, x: number, y: number): StickerCommand => {
   return{
     emoji,
     x,
     y,
+    rotation: stickerRotation,
     setPosition(x: number, y: number){
       this.x = x;
       this.y = y;
     },
     display(ctx: CanvasRenderingContext2D): void{
-      ctx.font = "32px";
-      ctx.fillText(this.emoji, this.x, this.y);
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate((this.rotation * Math.PI) / 180);
+      ctx.font = "32px monospace";
+      ctx.fillText(this.emoji, 0, 0);
+      ctx.restore();
     }
   }
 };
@@ -124,9 +168,12 @@ bus.addEventListener("tool-moved", redraw);
 tick();
 
 let isDragging = false;
+let isMouseDown = false;
 let currentSticker: StickerCommand | null = null;
 
 canvas.addEventListener("mousedown", (e) => {
+  isMouseDown = true;
+
   if(stickerCommand){
     const stickerWidth = 32;
     const stickerHeight = 32;
@@ -137,8 +184,8 @@ canvas.addEventListener("mousedown", (e) => {
       currentSticker = stickerCommand;
     } else {
       stickerCommand.setPosition(e.offsetX, e.offsetY);
+      stickerCommand.rotation = stickerRotation;
       commands.push(stickerCommand);
-      //stickerCommand = null;
       notify("drawing-changed");
     }
   }else{
@@ -160,9 +207,11 @@ canvas.addEventListener("mousemove", (e) => {
   }
   if (!cursorCommand) {
     cursorCommand = createCursorCommand(e.offsetX, e.offsetY);
+  }else{
+    cursorCommand?.draw(e.offsetX, e.offsetY);
+    notify("tool-moved");
   }
-  cursorCommand?.draw(e.offsetX, e.offsetY);
-  notify("tool-moved");
+  
 });
 
 canvas.addEventListener("mouseout", (e) => {
@@ -181,6 +230,7 @@ canvas.addEventListener("mouseenter", (e) => {
 })
 
 canvas.addEventListener("mouseup", () => {
+  isMouseDown = false;
   isDragging = false;
   currentLineCommand = null;
   currentSticker = null;
@@ -191,7 +241,7 @@ function redraw(): void{
   ctx?.clearRect(0, 0, canvas.width, canvas.height);
   commands.forEach((cmd) => cmd.display(ctx));
 
-  if(cursorCommand){
+  if(cursorCommand && !isMouseDown){
     cursorCommand.display(ctx);
   }
   if(stickerCommand){
@@ -329,11 +379,11 @@ app.append(exButton);
 
 exButton.addEventListener("click", () => {
   const exCanvas = document.createElement("canvas") as HTMLCanvasElement;
-  exCanvas.width = 1024;
+  exCanvas.width = 2048;
   exCanvas.height = 1024;
 
   const exCTX = exCanvas.getContext("2d") as CanvasRenderingContext2D;
-  exCTX.scale(2, 2);
+  exCTX.scale(4, 4);
 
   commands.forEach((cmd) => cmd.display(exCTX));
   const anchor = document.createElement("a");
