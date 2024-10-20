@@ -321,3 +321,23 @@ const selectedTool = document.createElement("div");
 selectedTool.className = "tool-display";
 selectedTool.innerHTML = "Selected Tool: Thin Pen";
 app.append(selectedTool);
+
+//export
+const exButton = document.createElement("button");
+exButton.innerHTML = "Export as PNG";
+app.append(exButton);
+
+exButton.addEventListener("click", () => {
+  const exCanvas = document.createElement("canvas") as HTMLCanvasElement;
+  exCanvas.width = 1024;
+  exCanvas.height = 1024;
+
+  const exCTX = exCanvas.getContext("2d") as CanvasRenderingContext2D;
+  exCTX.scale(4, 4);
+
+  commands.forEach((cmd) => cmd.display(exCTX));
+  const anchor = document.createElement("a");
+  anchor.href = exCanvas.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
+});
