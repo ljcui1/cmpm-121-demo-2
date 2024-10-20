@@ -239,19 +239,21 @@ redoButton.addEventListener("click", () => {
 });
 
 //making sticker buttons
+const emojis = ["🐀", "😈", "👾"];
+const emojiButtons: string[] = [...emojis];
 const createStickerButton = (emoji: string) => {
   const button = document.createElement("button");
   button.innerHTML = emoji;
   button.addEventListener("click", () => {
     stickerCommand = createStickerCommand(emoji, cursorCommand?.x || 0, cursorCommand?.y || 0);
-    selectedTool.innerHTML = `Selected Tool: ${emoji}`;cursorImg = emoji;
+    selectedTool.innerHTML = `Selected Tool: ${emoji}`;
+    cursorImg = emoji;
     cursorPos = 0;
     notify("tool-moved");
   });
   return button;
 };
 
-const emojiButtons = ["🐀", "😈", "👾"];
 emojiButtons.forEach((emoji) => {
   const stickerButton = createStickerButton(emoji);
   app.append(stickerButton);
@@ -287,6 +289,20 @@ thickPenButton.addEventListener("click", () => {
   cursorPos = 8;
   cursorImg = "•";
   stickerCommand = null;
+});
+
+//custom sticker
+const customStickerButton = document.createElement("button");
+customStickerButton.innerHTML = "Custom Sticker";
+buttonContainer.append(customStickerButton);
+
+customStickerButton.addEventListener("click", () => {
+  const customEmoji = prompt("Enter a custom emoji or symbol:");
+  if(customEmoji){
+    emojis.push(customEmoji);
+    const customStickerBTN = createStickerButton(customEmoji);
+    buttonContainer.append(customStickerBTN);
+  }
 });
 
 //reformatting canvas and buttons
