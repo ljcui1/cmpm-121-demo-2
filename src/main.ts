@@ -15,8 +15,8 @@ app.append(title);
 
 //canvas
 const canvas = document.createElement("canvas") as HTMLCanvasElement;
-canvas.width = 256;
-canvas.height = 256
+canvas.width = 512;
+canvas.height = 512;
 app.append(canvas);
 const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -333,7 +333,7 @@ exButton.addEventListener("click", () => {
   exCanvas.height = 1024;
 
   const exCTX = exCanvas.getContext("2d") as CanvasRenderingContext2D;
-  exCTX.scale(4, 4);
+  exCTX.scale(2, 2);
 
   commands.forEach((cmd) => cmd.display(exCTX));
   const anchor = document.createElement("a");
