@@ -58,6 +58,7 @@ let cursorCommand: CursorCommand | null = null;
 let stickerCommand: StickerCommand | null = null;
 
 let currentMarkerColor = "#000000";
+let shouldRedraw = true;
 
 const colorPicker = document.createElement("input");
 colorPicker.type = "color";
@@ -68,6 +69,7 @@ colorPicker.addEventListener("input", (e) => {
   const target = e.target as HTMLInputElement | null;
   if(target){
     currentMarkerColor = target.value;
+    shouldRedraw = true;
   }
 });
 
@@ -93,6 +95,7 @@ const createMarkerLineCommand = (x: number, y: number): MarkerLineCommand => {
 
     drag: (x: number, y: number) => {
       points.push({x, y});
+      shouldRedraw = true;
     },
   };
 };
@@ -104,6 +107,7 @@ const createCursorCommand = (x: number, y: number): CursorCommand => {
     draw(x: number, y: number){
       this.x = x;
       this.y = y;
+      shouldRedraw = true;
     },
     display(ctx: CanvasRenderingContext2D): void{
       ctx.save();
@@ -159,13 +163,13 @@ const createStickerCommand = (emoji: string, x: number, y: number): StickerComma
 const bus = new EventTarget();
 
 function notify(name: string): void{
+  shouldRedraw = true;
+  console.log(shouldRedraw);
   bus.dispatchEvent(new Event(name));
 }
 
 bus.addEventListener("drawing-changed", redraw);
 bus.addEventListener("tool-moved", redraw);
-
-tick();
 
 let isDragging = false;
 let isMouseDown = false;
@@ -238,6 +242,9 @@ canvas.addEventListener("mouseup", () => {
 });
 
 function redraw(): void{
+  if (!shouldRedraw) return;
+  shouldRedraw = false;
+
   ctx?.clearRect(0, 0, canvas.width, canvas.height);
   commands.forEach((cmd) => cmd.display(ctx));
 
@@ -248,12 +255,6 @@ function redraw(): void{
     stickerCommand.display(ctx);
   }
 }
-
-function tick(): void{
-  redraw();
-  requestAnimationFrame(tick);
-}
-tick();
 
 document.body.append(document.createElement("br"));
 //buttons
