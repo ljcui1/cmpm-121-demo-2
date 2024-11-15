@@ -50,8 +50,8 @@ const commands: Command[] = [];
 const redoCommands: Command[] = [];
 
 let penWidth = 1;
-let cursorImg = "∙";
-let cursorPos = 8;
+let cursorImage = "∙";
+let cursorPosition = 8;
 
 let currentLineCommand: MarkerLineCommand | null = null;
 let cursorCommand: CursorCommand | null = null;
@@ -114,7 +114,7 @@ const createCursorCommand = (x: number, y: number): CursorCommand => {
       ctx.translate(this.x, this.y);
       ctx.rotate((stickerRotation * Math.PI) / 180);
       ctx.font = "32px monospace";
-      ctx.fillText(cursorImg, 0 - cursorPos, cursorPos);
+      ctx.fillText(cursorImage, 0 - cursorPosition, cursorPosition);
       ctx.restore();
     },
     
@@ -298,8 +298,8 @@ const createStickerButton = (emoji: string) => {
   button.addEventListener("click", () => {
     stickerCommand = createStickerCommand(emoji, cursorCommand?.x || 0, cursorCommand?.y || 0);
     selectedTool.innerHTML = `Selected Tool: ${emoji}`;
-    cursorImg = emoji;
-    cursorPos = 0;
+    cursorImage = emoji;
+    cursorPosition = 0;
     notify("tool-moved");
   });
   return button;
@@ -322,8 +322,8 @@ thinPenButton.addEventListener("click", () => {
   thinPenButton.classList.add("active");
   thickPenButton.classList.remove("active");
   selectedTool.innerHTML = "Selected Tool: Thin Pen";
-  cursorPos = 8;
-  cursorImg = "∙";
+  cursorPosition = 8;
+  cursorImage = "∙";
   stickerCommand = null;
 });
 
@@ -337,8 +337,8 @@ thickPenButton.addEventListener("click", () => {
   thickPenButton.classList.add("active");
   thinPenButton.classList.remove("active");
   selectedTool.innerHTML = "Selected Tool: Thick Pen";
-  cursorPos = 8;
-  cursorImg = "•";
+  cursorPosition = 8;
+  cursorImage = "•";
   stickerCommand = null;
 });
 
@@ -374,21 +374,21 @@ selectedTool.innerHTML = "Selected Tool: Thin Pen";
 app.append(selectedTool);
 
 //export
-const exButton = document.createElement("button");
-exButton.innerHTML = "Export as PNG";
-app.append(exButton);
+const exportButton = document.createElement("button");
+exportButton.innerHTML = "Export as PNG";
+app.append(exportButton);
 
-exButton.addEventListener("click", () => {
-  const exCanvas = document.createElement("canvas") as HTMLCanvasElement;
-  exCanvas.width = 2048;
-  exCanvas.height = 1024;
+exportButton.addEventListener("click", () => {
+  const exportCanvas = document.createElement("canvas") as HTMLCanvasElement;
+  exportCanvas.width = 2048;
+  exportCanvas.height = 1024;
 
-  const exCTX = exCanvas.getContext("2d") as CanvasRenderingContext2D;
-  exCTX.scale(4, 4);
+  const exportContext = exportCanvas.getContext("2d") as CanvasRenderingContext2D;
+  exportContext.scale(4, 4);
 
-  commands.forEach((cmd) => cmd.display(exCTX));
+  commands.forEach((cmd) => cmd.display(exportContext));
   const anchor = document.createElement("a");
-  anchor.href = exCanvas.toDataURL("image/png");
+  anchor.href = exportCanvas.toDataURL("image/png");
   anchor.download = "sketchpad.png";
   anchor.click();
 });
