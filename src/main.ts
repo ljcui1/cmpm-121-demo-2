@@ -296,7 +296,7 @@ const createStickerButton = (emoji: string) => {
   const button = document.createElement("button");
   button.innerHTML = emoji;
   button.addEventListener("click", () => {
-    stickerCommand = createStickerCommand(emoji, cursorCommand?.x || 0, cursorCommand?.y || 0);
+    stickerCommand = createStickerCommand(emoji, cursorCommand?.x || -10, cursorCommand?.y || -10);
     selectedTool.innerHTML = `Selected Tool: ${emoji}`;
     cursorImg = emoji;
     cursorPos = 0;
@@ -304,12 +304,6 @@ const createStickerButton = (emoji: string) => {
   });
   return button;
 };
-
-emojiButtons.forEach((emoji) => {
-  const stickerButton = createStickerButton(emoji);
-  app.append(stickerButton);
-  buttonContainer.append(stickerButton);
-});
 
 //pens
 const thinPenButton = document.createElement("button");
@@ -345,7 +339,6 @@ thickPenButton.addEventListener("click", () => {
 //custom sticker
 const customStickerButton = document.createElement("button");
 customStickerButton.innerHTML = "Custom Sticker";
-buttonContainer.append(customStickerButton);
 
 customStickerButton.addEventListener("click", () => {
   const customEmoji = prompt("Enter a custom emoji or symbol:");
@@ -365,7 +358,13 @@ container.append(canvas);
 
 container.append(buttonContainer);
 
-buttonContainer.append(clearButton, undoButton, redoButton, thinPenButton, thickPenButton);
+buttonContainer.append(clearButton, undoButton, redoButton, thinPenButton, thickPenButton, customStickerButton);
+
+emojiButtons.forEach((emoji) => {
+  const stickerButton = createStickerButton(emoji);
+  app.append(stickerButton);
+  buttonContainer.append(stickerButton);
+});
 
 //ui info
 const selectedTool = document.createElement("div");
